@@ -1,17 +1,19 @@
 using System;
-using System.Net.Mime;
+using System.Linq;
 using Death;
 using Death.App;
+using Death.App.UserInterface.Cursors;
 using Death.Data;
+using Death.Dialogues;
+using Death.Dialogues.Core;
+using Death.Dialogues.Presentation.BubbleDialogue;
 using Death.Items;
 using Death.Run.Behaviours;
-using Death.Run.Behaviours.Abilities;
 using Death.Run.Behaviours.Entities;
 using Death.Run.Core;
 using Death.Unlockables;
 using UnityEngine;
 using DeathDidntWin.Miscellanious;
-using DeathDidntWin.Patches;
 using HarmonyLib;
 
 namespace DeathDidntWin;
@@ -20,7 +22,7 @@ public static class DDWGui
 {
     #region Fields
 
-    private static bool showUniqueItems_;
+    public static bool IsShowingItemWindow;
     private static Vector2 scrollPosition_;
     private static Vector2 scrollPosition_2;
     
@@ -33,15 +35,29 @@ public static class DDWGui
             GUILayout.BeginHorizontal();
             GUILayout.Label("Debug Options");
             GUILayout.EndHorizontal();
+
+            var prevColor = GUI.backgroundColor;
+            GUI.backgroundColor = CursorManager.ForceOsCursor ? Color.green : Color.red;
+            if (GUILayout.Button("Force Os Cursor"))
+            {
+                var flag = !CursorManager.ForceOsCursor;
+                CursorManager.ForceOsCursor = flag;
+            }
+            GUI.backgroundColor = prevColor;
             
             if (GUILayout.Button("Close Game"))
             {
                 Application.Quit();
             }
 
-            if (GUILayout.Button("Set 1000FPS Limit"))
+            if (GUILayout.Button("Uncap FPS"))
             {
                 Application.targetFrameRate = 1000;
+            }
+
+            if (GUILayout.Button("Debug Chat Bubble"))
+            {
+                PopMessage("Debug Chat Bubble");
             }
         }
 
@@ -52,7 +68,7 @@ public static class DDWGui
             GUILayout.EndHorizontal();
             var player = Player.Instance;
             
-            showUniqueItems_ = GUILayout.Toggle(showUniqueItems_, "Show Unique Items List");
+            IsShowingItemWindow = GUILayout.Toggle(IsShowingItemWindow, "Show Item Spawner");
 
             if (GUILayout.Button("Enable GodMode"))
             {
@@ -88,7 +104,7 @@ public static class DDWGui
                 Debug.LogWarning("Added 10k Gold!");
             }
 
-            if (GUILayout.Button("Add 25k Exp"))
+            if (GUILayout.Button("Add 1.25k Exp"))
             {
                 if (References.TryGetGameManager() == null)
                     return;
@@ -97,8 +113,8 @@ public static class DDWGui
                 if (xpTrackerComponent == null)
                     return;
                 
-                xpTrackerComponent.GainXp(25000f);
-                Debug.LogWarning("Added 25k Exp!");
+                xpTrackerComponent.GainXp(1250F);
+                Debug.LogWarning("Added 1.25k Exp!");
             }
 
             if (GUILayout.Button("Unlock All"))
@@ -124,6 +140,7 @@ public static class DDWGui
 
         using (new GUILayout.VerticalScope("box"))
         {
+            GUILayout.Label("<b>Stats Modifier</b>");
             try
             {
                 var player = Player.Instance;
@@ -134,89 +151,86 @@ public static class DDWGui
                 var stats = player.Entity.Stats;
                 if (stats == null)
                     return;
-
-                var intial = 0f;
-                var negativeInitial = -intial;
-
-                if (GUILayout.Button("Reset Stats"))
-                {
-                    if (intial != 0f)
-                        return;
-                    
-                    foreach (StatId stat in Enum.GetValues(typeof(StatId)))
-                    {
-                        stats.Modifier.SetFlat(stat, negativeInitial);
-                        intial = 0f;
-                    }
-                }
                 
                 foreach (StatId stat in Enum.GetValues(typeof(StatId)))
                 {
                     if (GUILayout.Button($"Add 5 Flat To {stat.ToString()}"))
                     {
-                        stats.Modifier.SetFlat(stat, 5);
-                        intial += 5f;
+                        stats.Modifier.AddFlat(stat, 5);
                     }
                 }
-
                 GUILayout.EndScrollView();
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Debug.LogError($"Error in stats modifer scrollview: {ex.Message}");
             }
         }
+        
+        GUI.DragWindow();
+    }
 
-
+    public static void DrawItems(int windowID)
+    {
+        GUILayout.Label("<b>Item's Will Go In Inventory!</b>");
         using (new GUILayout.VerticalScope("box"))
         {
             scrollPosition_ = GUILayout.BeginScrollView(scrollPosition_, GUILayout.MinHeight(240));
-            if (showUniqueItems_)
+            try
             {
-                try
+                var uniqueItems = References.TryGetUniqueItems().OrderBy(item => item.Item.Rarity).ThenBy(item => item.Item.Code);
+
+                foreach (var item in uniqueItems)
                 {
-                    foreach (var item in References.TryGetUniqueItems())
+                    var prevColor = GUI.backgroundColor;
+                    switch (item.Item.Rarity)
                     {
-                        if (item == null)
-                            continue;
-                        var prevColor = GUI.backgroundColor;
-
-                        if (item.Item.Rarity == ItemRarity.Immortal)
-                            GUI.backgroundColor = new Color(1f, .45f,0f,1f);
-                        
-                        if (item.Item.Rarity == ItemRarity.Mythic)
-                            GUI.backgroundColor = Color.red;
-
-                        if (item.Item.Rarity == ItemRarity.Rare)
+                        case ItemRarity.Common:
+                            GUI.backgroundColor = Color.white;
+                            break;
+                        case ItemRarity.Rare:
                             GUI.backgroundColor = Color.blue;
-                        
-                        if (item.Item.Rarity == ItemRarity.Common)
-                            GUI.backgroundColor = new Color(.36f, .25f, 0f, 1f);
-
-                        if (item.Item.Rarity == ItemRarity.Epic)
-                            GUI.backgroundColor = new Color(0.4f, 0.0f, 0.4f, 1f);
-
-                        if (GUILayout.Button($"Add {item.Item.Code}"))
-                        {
-                            var backpack = References.TryGetGameManager().ProfileManager.Active.Backpack;
-                            backpack.TryAdd(item.Item.Clone(), true);
-                        }
-                        
-                        GUI.backgroundColor = prevColor;
+                            break;
+                        case ItemRarity.Epic:
+                            GUI.backgroundColor = Color.magenta;
+                            break;
+                        case ItemRarity.Mythic:
+                            GUI.backgroundColor = Color.red;
+                            break;
+                        case ItemRarity.Immortal:
+                            GUI.backgroundColor = Color.yellow;
+                            break;
                     }
+                        
+                    if (GUILayout.Button($"Add {item.Item.Code}"))
+                    {
+                        var backpack = References.TryGetGameManager().ProfileManager.Active.Backpack;
+                        backpack.TryAdd(item.Item.Clone(), true);
+                    }
+                    GUI.backgroundColor = prevColor;
                 }
-                catch
-                {
-                    // ignored
-                }
+            }
+            catch(Exception ex)
+            {
+                Debug.LogError($"Error in item scrollview: {ex.Message}");
+                throw;
             }
             GUILayout.EndScrollView();
         }
-        GUI.DragWindow();
     }
 
 
     #region Methods
+
+    private static void PopMessage(string message)
+    {
+        string[] messages = [message];
+        DialogueSpeaker speaker = Player.Instance.Speaker;
+        Dialogue dialogue = new Dialogue(Dialogue.Types.NonInterrupting);
+        dialogue.Lines.Add(Line.Say(speaker.SpeakerId, messages, null));
+        BubbleDialogueContext context = DialogueSpeakerManager.GenerateContext();
+        context.AddInitialSpeaker(speaker);
+    }
     private static void UnlockAll()
     {
         var progression = References.TryGetGameManager().ProfileManager.Active.Progression;
