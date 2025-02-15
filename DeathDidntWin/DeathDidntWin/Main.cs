@@ -44,7 +44,7 @@ public class Main : BaseUnityPlugin
         {
             if (player == null)
             {
-                Debug.LogError("Unable to find player object! Health added disabled");
+                Debug.LogError("Unable to find player object! Health adder disabled");
                 return;
             }
             player.Entity.GainLife(Lifegain.Heal(1000f), true);
@@ -60,9 +60,9 @@ public class Main : BaseUnityPlugin
         if (Skin.WhiteSkin != null)
             GUI.skin = Skin.WhiteSkin;
         
-        windowRect_ = GUILayout.Window(GetHashCode(), windowRect_, DDWGui.Draw, "<b>Death Didnt Win</b>", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
         CursorManager.ForceOsCursor = isWindowToggled_;
+        
+        windowRect_ = GUILayout.Window(GetHashCode(), windowRect_, DDWGui.Draw, "<b>Death Didnt Win</b>", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         
         try
         {

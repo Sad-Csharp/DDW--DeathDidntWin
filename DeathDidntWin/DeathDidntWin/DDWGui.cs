@@ -1,20 +1,20 @@
 using System;
 using System.Linq;
 using Death;
-using Death.App;
-using Death.App.UserInterface.Cursors;
 using Death.Data;
-using Death.Dialogues;
 using Death.Dialogues.Core;
 using Death.Dialogues.Presentation.BubbleDialogue;
 using Death.Items;
 using Death.Run.Behaviours;
 using Death.Run.Behaviours.Entities;
+using Death.Run.Behaviours.Players;
 using Death.Run.Core;
+using Death.Run.Core.Abilities;
+using Death.Run.Core.Boons;
+using Death.Run.Systems;
 using Death.Unlockables;
 using UnityEngine;
 using DeathDidntWin.Miscellanious;
-using HarmonyLib;
 
 namespace DeathDidntWin;
 
@@ -35,15 +35,6 @@ public static class DDWGui
             GUILayout.BeginHorizontal();
             GUILayout.Label("Debug Options");
             GUILayout.EndHorizontal();
-
-            var prevColor = GUI.backgroundColor;
-            GUI.backgroundColor = CursorManager.ForceOsCursor ? Color.green : Color.red;
-            if (GUILayout.Button("Force Os Cursor"))
-            {
-                var flag = !CursorManager.ForceOsCursor;
-                CursorManager.ForceOsCursor = flag;
-            }
-            GUI.backgroundColor = prevColor;
             
             if (GUILayout.Button("Close Game"))
             {
@@ -58,6 +49,11 @@ public static class DDWGui
             if (GUILayout.Button("Debug Chat Bubble"))
             {
                 PopMessage("Debug Chat Bubble");
+            }
+
+            if (GUILayout.Button("Debug Boons"))
+            {
+                //DebugBoons();
             }
         }
 
@@ -78,16 +74,6 @@ public static class DDWGui
                     return;
                 }
                 player.Entity.Invulnerable.AddStack();
-            }
-
-            if (GUILayout.Button("Disable GodMode"))
-            {
-                if (player == null)
-                {
-                    Debug.LogError("Unable to find player object! God mode disabled");
-                    return;
-                }
-                player.Entity.Invulnerable.RemoveStack();
             }
             
             if (GUILayout.Button("Add 10k Gold"))
@@ -156,7 +142,7 @@ public static class DDWGui
                 {
                     if (GUILayout.Button($"Add 5 Flat To {stat.ToString()}"))
                     {
-                        stats.Modifier.AddFlat(stat, 5);
+                        stats.Modifier.AddPassValue(StatPass.Flat, stat, 5);
                     }
                 }
                 GUILayout.EndScrollView();
@@ -222,6 +208,7 @@ public static class DDWGui
 
     #region Methods
 
+    // not working atm
     private static void PopMessage(string message)
     {
         string[] messages = [message];
@@ -231,6 +218,22 @@ public static class DDWGui
         BubbleDialogueContext context = DialogueSpeakerManager.GenerateContext();
         context.AddInitialSpeaker(speaker);
     }
+
+    private static void AddBoon()
+    {
+        Behaviour_Player player = Player.Instance;
+        BoonManager boonManager = player._boonManager;
+        
+        if (boonManager == null)
+            return;
+
+        if (player == null)
+            return;
+
+       // var data = new BoonData("null", "type", SkillSlot.Attack, BoonRarity.Master, )
+        
+    }
+    
     private static void UnlockAll()
     {
         var progression = References.TryGetGameManager().ProfileManager.Active.Progression;
@@ -256,31 +259,6 @@ public static class DDWGui
         
         Debug.LogWarning("All unlocks have been unlocked!");
     }
-
     
-    /*
-     * if (GUILayout.Button("Debug Items List"))
-            {
-                foreach (var item in Database.ItemUniques.All)
-                    Debug.LogWarning(item.Item.Code + ": " + item.Item.SubtypeCode + " - " + item.Item.Class + " - " + item.Item.Rarity);
-            }
-
-            if (GUILayout.Button("Give All Immortal Items"))
-            {
-                foreach (UniqueItemTemplate item in Database.ItemUniques.All)
-                {
-                    if (item.Item.Rarity == ItemRarity.Immortal)
-                        References.TryGetGameManager().ProfileManager.Active.Backpack.TryAdd(item.Item.Clone(), true);
-                }
-            }
-            
-            if (GUILayout.Button("Give All Unique Items"))
-            {
-                foreach (UniqueItemTemplate item in Database.ItemUniques.All)
-                {
-                    References.TryGetGameManager().ProfileManager.Active.Stashes._stashes[0]._pages.ForEach(slot  => slot.TryAdd(item.Item.Clone()));
-                }
-            }
-     */
     #endregion
 }
