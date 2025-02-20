@@ -19,6 +19,7 @@ public class Main : BaseUnityPlugin
     private Rect itemWindowRect_ = new(10, 10, 10, 10);
     private Rect windowRect_ = new (0,0,350,350);
     private bool isWindowToggled_;
+    
     #endregion
     
     private void Start()

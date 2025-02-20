@@ -21,11 +21,11 @@ public static class Patcher
         try
         {
             harmony_.PatchAll(type);
-            Debug.Log("Applied patche for " + type.Name);
+            Debug.Log("Applied patch for " + type.Name);
         }
         catch (Exception ex)
         {
-            Debug.LogError("Unable to apply patches for " + type.Name + ", error: " + ex.Message);
+            Debug.LogError("Unable to apply patch for " + type.Name + ", error: " + ex.Message);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Death;
+using Death.App;
 using Death.Data;
 using Death.Dialogues.Core;
 using Death.Dialogues.Presentation.BubbleDialogue;
@@ -9,8 +10,6 @@ using Death.Run.Behaviours;
 using Death.Run.Behaviours.Entities;
 using Death.Run.Behaviours.Players;
 using Death.Run.Core;
-using Death.Run.Core.Abilities;
-using Death.Run.Core.Boons;
 using Death.Run.Systems;
 using Death.Unlockables;
 using UnityEngine;
@@ -213,7 +212,7 @@ public static class DDWGui
     {
         string[] messages = [message];
         DialogueSpeaker speaker = Player.Instance.Speaker;
-        Dialogue dialogue = new Dialogue(Dialogue.Types.NonInterrupting);
+        Dialogue dialogue = new (Dialogue.Types.NonInterrupting);
         dialogue.Lines.Add(Line.Say(speaker.SpeakerId, messages, null));
         BubbleDialogueContext context = DialogueSpeakerManager.GenerateContext();
         context.AddInitialSpeaker(speaker);
@@ -230,13 +229,12 @@ public static class DDWGui
         if (player == null)
             return;
 
-       // var data = new BoonData("null", "type", SkillSlot.Attack, BoonRarity.Master, )
-        
+        // var data = new BoonData("null", "type", SkillSlot.Attack, BoonRarity.Master, )
     }
     
     private static void UnlockAll()
     {
-        var progression = References.TryGetGameManager().ProfileManager.Active.Progression;
+        Progression progression = References.TryGetGameManager().ProfileManager.Active.Progression;
         
         if (progression == null)
             return;
